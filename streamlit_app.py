@@ -4,7 +4,7 @@ import pydeck as pdk
 from opencage.geocoder import OpenCageGeocode
 
 # Substitua 'YOUR_API_KEY' pela sua chave de API do OpenCage
-API_KEY = 'YOUR_API_KEY'
+API_KEY = '7f38892f029d43b7b4b8a2979645ba37'
 geocoder = OpenCageGeocode(API_KEY)
 
 
