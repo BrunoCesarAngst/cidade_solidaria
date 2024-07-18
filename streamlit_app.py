@@ -16,16 +16,24 @@ from database import create_user, get_user, create_problem, get_all_problems
 # Carregar variáveis de ambiente do arquivo .env
 load_dotenv()
 
-# Carregar segredos do secrets.toml
-api_key = st.secrets["general"]["api_key"]
+# Verificar se a variável de ambiente ENVIRONMENT foi carregada
+environment = os.getenv("ENVIRONMENT")
+if not environment:
+    raise Exception("ENVIRONMENT variável não definida ou inválida!")
 
-# URLs do banco de dados
-db_url_local = st.secrets["database"]["url_local"]
-db_url_docker = st.secrets["database"]["url_docker"]
-db_url_production = st.secrets["database"]["url_production"]
+# Carregar segredos do secrets.toml
+try:
+    api_key = st.secrets["general"]["api_key"]
+
+    # URLs do banco de dados
+    db_url_local = st.secrets["database"]["url_local"]
+    db_url_docker = st.secrets["database"]["url_docker"]
+    db_url_production = st.secrets["database"]["url_production"]
+except KeyError as e:
+    raise Exception(f"Segredo {e} não encontrado. Verifique o arquivo secrets.toml ou as configurações de segredos no Streamlit Cloud.")
 
 # Configurar a URL do banco de dados com base no ambiente
-environment = os.getenv("ENVIRONMENT", "development").lower()
+environment = environment.lower()
 if environment == "production":
     db_url = db_url_production
 elif environment == "docker":
