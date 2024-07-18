@@ -48,12 +48,7 @@ cd cidade_solidaria
 
 ### 2. Criar e Configurar o Arquivo `.env`
 
-Crie um arquivo `.env` na raiz do projeto com o seguinte conteúdo:
-
-```
-# .env
-ENVIRONMENT=development
-```
+Crie um arquivo `.env` na raiz do projeto com o conteudo de example.env:
 
 ### 3. Criar e Configurar o Arquivo `secrets.toml`
 
