@@ -1,5 +1,4 @@
 import os
-
 import bcrypt  # Importando biblioteca para hash de senhas
 import pandas as pd
 import streamlit as st
@@ -14,14 +13,28 @@ from yaml.loader import SafeLoader
 import database as db_model
 from database import create_user, get_user, create_problem, get_all_problems
 
-# Carregar variáveis de ambiente
+# Carregar variáveis de ambiente do arquivo .env
 load_dotenv()
-API_KEY = os.getenv("API_KEY")
-ENVIRONMENT = os.getenv("ENVIRONMENT")
-DATABASE_URL = os.getenv(f"DATABASE_URL_{ENVIRONMENT.upper()}")
+
+# Carregar segredos do secrets.toml
+api_key = st.secrets["general"]["api_key"]
+
+# URLs do banco de dados
+db_url_local = st.secrets["database"]["url_local"]
+db_url_docker = st.secrets["database"]["url_docker"]
+db_url_production = st.secrets["database"]["url_production"]
+
+# Configurar a URL do banco de dados com base no ambiente
+environment = os.getenv("ENVIRONMENT", "development").lower()
+if environment == "production":
+    db_url = db_url_production
+elif environment == "docker":
+    db_url = db_url_docker
+else:
+    db_url = db_url_local
 
 # Inicializar geocoder
-geocoder = OpenCageGeocode(API_KEY)
+geocoder = OpenCageGeocode(api_key)
 
 # Carregar o arquivo de configuração
 with open('config.yaml') as file:
