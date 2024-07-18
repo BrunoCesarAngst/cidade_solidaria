@@ -1,0 +1,17 @@
+credentials:
+  usernames:
+    admin:
+      email: admin@example.com
+      failed_login_attempts: 0
+      logged_in: False
+      name: Admin User
+      password: adminpassword # será hash automaticamente
+
+cookie:
+  expiry_days: 30
+  key: some_signature_key
+  name: some_cookie_name
+
+pre-authorized:
+  emails:
+    - user@example.com
