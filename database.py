@@ -1,5 +1,5 @@
 from sqlalchemy import create_engine, Column, Integer, String, Float, ForeignKey
-from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import declarative_base
 from sqlalchemy.orm import sessionmaker, relationship
 from dotenv import load_dotenv
 import os
@@ -10,19 +10,25 @@ load_dotenv()  # Carregar variáveis de ambiente do arquivo .env
 ENVIRONMENT = os.getenv("ENVIRONMENT")
 
 if ENVIRONMENT == "development":
-    DATABASE_URL = os.getenv("DATABASE_URL_LOCAL")
-elif ENVIRONMENT == "docker":
     DATABASE_URL = os.getenv("DATABASE_URL_DOCKER")
+elif ENVIRONMENT == "local_database":
+     DATABASE_URL = os.getenv("DATABASE_URL_LOCAL")
 elif ENVIRONMENT == "production":
     DATABASE_URL = os.getenv("DATABASE_URL_PRODUCTION")
 else:
     raise Exception("ENVIRONMENT variável não definida ou inválida!")
+
+if ENVIRONMENT == "production":
+    print(f"Database selecionada: production! ")
+else:
+    print(f"Database selecionada: {DATABASE_URL} ")
 
 # Configuração do SQLAlchemy com base na URL do banco de dados
 engine = create_engine(DATABASE_URL)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 
+Base.metadata.create_all(bind=engine)
 
 # Definição das tabelas
 class User(Base):
@@ -73,6 +79,8 @@ def create_user(db, full_name, cpf, email, password):
     db.refresh(db_user)
     return db_user
 
+def get_all_users(db):
+    return db.query(User).filter().all()
 
 def get_user(db, email):
     return db.query(User).filter(User.email == email).first()
@@ -96,6 +104,7 @@ def create_problem(db, title, tags, description, latitude, longitude, state, cit
     db.add(db_problem)
     db.commit()
     db.refresh(db_problem)
+
     return db_problem
 
 

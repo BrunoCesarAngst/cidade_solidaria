@@ -1,111 +1,21 @@
-import os
-import bcrypt  # Importando biblioteca para hash de senhas
 import pandas as pd
-import streamlit as st
 import streamlit_authenticator as stauth
-import yaml
-from dotenv import load_dotenv
-from opencage.geocoder import OpenCageGeocode
+import streamlit as st
 from sqlalchemy.orm import Session
+from streamlit_authenticator.utilities.hasher import Hasher
 from validate_docbr import CPF
-from yaml.loader import SafeLoader
-
 import database as db_model
-from database import create_user, get_user, create_problem, get_all_problems
+from database import create_user, get_user, create_problem, get_all_problems, get_all_users
+from init_cidade_solidaria import initialize
+from map_cidade_solidaria import show_map
+from register_user import register_user
 
-# Carregar variáveis de ambiente do arquivo .env
-load_dotenv()
+db_url, geocoder = initialize()
 
-# Verificar se a variável de ambiente ENVIRONMENT foi carregada
-environment = os.getenv("ENVIRONMENT")
-if not environment:
-    raise Exception("ENVIRONMENT variável não definida ou inválida!")
 
-# Carregar segredos do secrets.toml
-try:
-    api_key = st.secrets["general"]["api_key"]
-
-    # URLs do banco de dados
-    db_url_local = st.secrets["database"]["url_local"]
-    db_url_docker = st.secrets["database"]["url_docker"]
-    db_url_production = st.secrets["database"]["url_production"]
-except KeyError as e:
-    raise Exception(f"Segredo {e} não encontrado. Verifique o arquivo secrets.toml ou as configurações de segredos no Streamlit Cloud.")
-
-# Configurar a URL do banco de dados com base no ambiente
-environment = environment.lower()
-if environment == "production":
-    db_url = db_url_production
-elif environment == "docker":
-    db_url = db_url_docker
-else:
-    db_url = db_url_local
-
-# Inicializar geocoder
-geocoder = OpenCageGeocode(api_key)
-
-# Carregar o arquivo de configuração
-with open('config.yaml') as file:
-    config = yaml.load(file, Loader=SafeLoader)
-
-# Configurar autenticação
-authenticator = stauth.Authenticate(
-    config['credentials'],
-    config['cookie']['name'],
-    config['cookie']['key'],
-    config['cookie']['expiry_days'],
-    config['pre-authorized']
-)
-
-# Funções de hash e verificação de senha
-def hash_password(password):
-    return bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
-
-def check_password(password, hashed):
-    return bcrypt.checkpw(password.encode(), hashed.encode())
-
-# Funções de validação
-def validate_cpf(cpf):
-    cpf_validator = CPF()
-    return cpf_validator.validate(cpf)
-
-def validate_password(password, confirm_password):
-    return password == confirm_password
-
-def register_user():
-    st.sidebar.title("Registrar")
-    full_name = st.sidebar.text_input("Nome Completo", max_chars=255, key="register_full_name")
-    cpf = st.sidebar.text_input("CPF", max_chars=11, key="register_cpf")
-    email = st.sidebar.text_input("Email", max_chars=255, key="register_email")
-    password = st.sidebar.text_input("Senha", type="password", key="register_password")
-    confirm_password = st.sidebar.text_input("Senha novamente", type="password", key="register_confirm_password")
-    if st.sidebar.button("Registrar", key="register_button"):
-        with Session(db_model.engine) as session:
-            if validate_cpf(cpf) and validate_password(password, confirm_password):
-                if not get_user(session, email):
-                    hashed_password = hash_password(password)
-                    create_user(session, full_name, cpf, email, hashed_password)
-                    st.sidebar.success("Registrado com sucesso. Faça login.")
-                else:
-                    st.sidebar.error("Email já cadastrado")
-            else:
-                st.sidebar.error("Erro na validação de CPF ou senhas não coincidem")
-
-def show_map():
-    with Session(db_model.engine) as session:
-        problems = get_all_problems(session)
-        df = pd.DataFrame([(p.title, p.tags, p.description, p.latitude, p.longitude, p.state, p.city, p.zipcode, p.street, p.number, p.reference) for p in problems],
-                          columns=['title', 'tags', 'description', 'lat', 'lon', 'state', 'city', 'zipcode', 'street', 'number', 'reference'])
-    st.map(df)
-    for _, row in df.iterrows():
-        st.write(f"**{row['title']}** - {row['tags']}")
-        st.write(f"{row['description']}")
-        st.write(f"{row['street']}, {row['number']}, {row['city']}, {row['state']}, {row['zipcode']}")
-        st.write(f"Referência: {row['reference']}")
-        st.write("---")
 
 def create_problem_form():
-    st.title("Cadastro de Problemas/Ações Sociais")
+    st.title("Cadastrar marcação")
     with st.form(key='problem_form'):
         title = st.text_input("Título", max_chars=40, key="problem_title")
         tags = st.text_input("Tags", max_chars=255, key="problem_tags")
@@ -116,7 +26,7 @@ def create_problem_form():
         street = st.text_input("Rua", key="problem_street")
         number = st.text_input("Número", key="problem_number")
         reference = st.text_input("Referência", key="problem_reference")
-        submit_button = st.form_submit_button(label='Cadastrar Problema')
+        submit_button = st.form_submit_button(label='Cadastrar ponto')
 
         if submit_button:
             address = f"{street}, {number}, {city}, {state}, {zipcode}"
@@ -144,6 +54,23 @@ def main():
         'password': 'Senha',
         'login': 'Entrar'
     }
+    with Session(db_model.engine) as session:
+        users = get_all_users(session)
+
+    credentials ={}
+    credentials['usernames'] = {}
+
+    for user in users:
+        credentials['usernames'][user.email] = {
+            "email": user.email,
+            "failed_login_attempts": 0,
+            "logged_in": False,
+            "name": user.full_name,
+            "password": user.password
+        }
+
+    authenticator = stauth.Authenticate(credentials, cookie_name='cookie_cidade_solidaria', cookie_key='.',
+                                        cookie_expiry_days=30)
 
     name, authentication_status, username = authenticator.login(fields=fields, location='main')
 
