@@ -12,33 +12,31 @@ from register_user import register_user
 
 db_url, geocoder = initialize()
 
-
-
-def create_problem_form():
-    st.title("Cadastrar marcação")
-    with st.form(key='problem_form'):
-        title = st.text_input("Título", max_chars=40, key="problem_title")
-        tags = st.text_input("Tags", max_chars=255, key="problem_tags")
-        description = st.text_area("Descrição", key="problem_description")
-        state = st.text_input("Estado", key="problem_state")
-        city = st.text_input("Cidade", key="problem_city")
-        zipcode = st.text_input("CEP", key="problem_zipcode")
-        street = st.text_input("Rua", key="problem_street")
-        number = st.text_input("Número", key="problem_number")
-        reference = st.text_input("Referência", key="problem_reference")
-        submit_button = st.form_submit_button(label='Cadastrar ponto')
-
-        if submit_button:
-            address = f"{street}, {number}, {city}, {state}, {zipcode}"
-            result = geocoder.geocode(address)
-            if result:
-                lat = result[0]['geometry']['lat']
-                lon = result[0]['geometry']['lng']
-                with Session(db_model.engine) as session:
-                    create_problem(session, title, tags, description, lat, lon, state, city, zipcode, street, number, reference, st.session_state['user_id'])
-                st.success("Problema cadastrado com sucesso!")
-            else:
-                st.error("Endereço não encontrado. Tente novamente.")
+# def create_problem_form():
+#     st.title("Cadastrar marcação")
+#     with st.form(key='problem_form'):
+#         title = st.text_input("Título", max_chars=40, key="problem_title")
+#         tags = st.text_input("Tags", max_chars=255, key="problem_tags")
+#         description = st.text_area("Descrição", key="problem_description")
+#         state = st.text_input("Estado", key="problem_state")
+#         city = st.text_input("Cidade", key="problem_city")
+#         zipcode = st.text_input("CEP", key="problem_zipcode")
+#         street = st.text_input("Rua", key="problem_street")
+#         number = st.text_input("Número", key="problem_number")
+#         reference = st.text_input("Referência", key="problem_reference")
+#         submit_button = st.form_submit_button(label='Cadastrar ponto')
+#
+#         if submit_button:
+#             address = f"{street}, {number}, {city}, {state}, {zipcode}"
+#             result = geocoder.geocode(address)
+#             if result:
+#                 lat = result[0]['geometry']['lat']
+#                 lon = result[0]['geometry']['lng']
+#                 with Session(db_model.engine) as session:
+#                     create_problem(session, title, tags, description, lat, lon, state, city, zipcode, street, number, reference, st.session_state['user_id'])
+#                 st.success("Problema cadastrado com sucesso!")
+#             else:
+#                 st.error("Endereço não encontrado. Tente novamente.")
 
 def show_partners():
     st.title("Parceiros")
@@ -110,7 +108,8 @@ def main():
         pass
     elif choice == "Cadastrar Problema":
         if st.session_state['logged_in']:
-            create_problem_form()
+            pass
+            #create_problem_form()
         else:
             st.error("Por favor, faça login para cadastrar um problema.")
     elif choice == "Logout":
